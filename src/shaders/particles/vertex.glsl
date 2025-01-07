@@ -6,6 +6,7 @@ attribute float aSize;
 
 
 varying vec3 vColor;
+varying vec3 vPosition;
 
 void main()
 {
@@ -22,5 +23,5 @@ void main()
 
     // Varyings
     vColor = vec3(1.0);
-
+    vPosition = modelPosition.xyz;
 }

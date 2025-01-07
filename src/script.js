@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { GPUComputationRenderer } from 'three/examples/jsm/Addons.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import GUI from 'lil-gui'
 import particlesVertexShader from './shaders/particles/vertex.glsl'
 import particlesFragmentShader from './shaders/particles/fragment.glsl'
@@ -66,12 +67,20 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
-camera.position.set(4.5, 4, 11)
+const camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.1, 35)
+
+const camera2 = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
+camera.position.set(6.6, 0, 20)
+camera2.position.set(20, 3, 30)
 scene.add(camera)
+scene.add(camera2)
+const cameraHelper = new THREE.CameraHelper(camera) 
+scene.add(cameraHelper)
+
+
 
 // Controls
-const controls = new OrbitControls(camera, canvas)
+const controls = new OrbitControls(camera2, canvas)
 controls.enableDamping = true
 
 /**
@@ -84,23 +93,58 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(sizes.pixelRatio)
 
-debugObject.clearColor = '#29191f'
+debugObject.clearColor = '#000000'
 renderer.setClearColor(debugObject.clearColor)
+
+/**
+ * render text Geometry
+ */
+let textGeometry = null
+const baseGeometry = {}
+const loader = new FontLoader()
+ loader.load('./font/BadScript_Regular.json', (font) => {
+ textGeometry = new TextGeometry("Kyle Zicherman's Portfolio",
+        {
+        font: font,
+        size: 1,
+        depth: .1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 5
+    } );
+
+    baseGeometry.instance = textGeometry
+
+baseGeometry.count = baseGeometry.instance.attributes.position.count
+});
+
+    // console.log(textGeometry)
+    const textMaterial = new THREE.MeshBasicMaterial()
+    // const text = new THREE.Mesh(textGeometry, textMaterial)
+    // scene.add(text)
+
 
 /**
  * Base Geometry
  */
-
-const baseGeometry = {}
+const gltf = await loader.loadAsync('./font/BadScript_Regular.json')
 //creates the base geometry
-const textGeometry = new TextGeometry('Kyle Zicherman', {
-    size: 1,
-});
-const mesh = new THREE.Mesh(textGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }))
+
+
+
+
 // scene.add(mesh)
-baseGeometry.instance = new THREE.SphereGeometry(3)
 //gets the count of the base geometry
-baseGeometry.count = baseGeometry.instance.attributes.position.count
+// baseGeometry.count = baseGeometry.instance.attributes.position.count
+let mousePos = { x: 0.0, y: 0.0 }
+canvas.addEventListener("mousemove", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos.x = (event.clientX - rect.left) / rect.width;
+    mousePos.y = 1.0 - (event.clientY - rect.top) / rect.height; // Flip y-axis
+});
 
 /**
  * GPU Computation
@@ -141,17 +185,20 @@ gpgpu.computation.setVariableDependencies(gpgpu.particleVariable, [gpgpu.particl
 gpgpu.particleVariable.material.uniforms.uTime = new THREE.Uniform(0)
 gpgpu.particleVariable.material.uniforms.uDeltaTime = new THREE.Uniform(0)
 gpgpu.particleVariable.material.uniforms.uBase = new THREE.Uniform(baseParticleTexture)
+gpgpu.particleVariable.material.uniforms.uMouse = new THREE.Uniform(new THREE.Vector2(mousePos.x, mousePos.y))
+
+
 //init
 gpgpu.computation.init()
 
 //Debug
-gpgpu.debug = new THREE.Mesh(
-    new THREE.PlaneGeometry(3, 3),
- new THREE.MeshBasicMaterial({
-        map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particleVariable).texture
- }))
- gpgpu.debug.position.set(3, 0, 0)
- scene.add(gpgpu.debug)
+// gpgpu.debug = new THREE.Mesh(
+//     new THREE.PlaneGeometry(3, 3),
+//  new THREE.MeshBasicMaterial({
+//         map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particleVariable).texture
+//  }))
+//  gpgpu.debug.position.set(3, 0, 0)
+//  scene.add(gpgpu.debug)
 
 
 
@@ -190,7 +237,7 @@ particles.material = new THREE.ShaderMaterial({
     fragmentShader: particlesFragmentShader,
     uniforms:
     {
-        uSize: new THREE.Uniform(0.07),
+        uSize: new THREE.Uniform(0.00),
         uResolution: new THREE.Uniform(new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)),
         uParticlesTexture: new THREE.Uniform()
     }
@@ -205,6 +252,10 @@ scene.add(particles.points)
  */
 gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
 gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
+const cameraFolder = gui.addFolder('Camera Position')
+cameraFolder.add(camera.position, 'x').min(-50).max(50).step(0.1).name('X')
+cameraFolder.add(camera.position, 'y').min(-50).max(50).step(0.1).name('Y')
+cameraFolder.add(camera.position, 'z').min(-50).max(50).step(0.1).name('Z')
 
 /**
  * Animate
@@ -224,6 +275,7 @@ const tick = () =>
     //GPGPU update
     gpgpu.particleVariable.material.uniforms.uDeltaTime.value = deltaTime
     gpgpu.particleVariable.material.uniforms.uTime.value = elapsedTime
+    gpgpu.particleVariable.material.uniforms.uMouse.value = new THREE.Vector2(mousePos.x, mousePos.y)
     gpgpu.computation.compute()
     particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particleVariable).texture
 
