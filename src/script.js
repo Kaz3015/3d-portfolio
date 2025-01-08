@@ -72,10 +72,13 @@ const camera = new THREE.PerspectiveCamera(60, sizes.width / sizes.height, 0.1, 
 const camera2 = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 100)
 camera.position.set(6.6, 0, 20)
 camera2.position.set(20, 3, 30)
-scene.add(camera)
-scene.add(camera2)
-const cameraHelper = new THREE.CameraHelper(camera) 
-scene.add(cameraHelper)
+scene.add(camera, camera2)
+
+
+
+const cameraHelper = new THREE.CameraHelper(camera)
+
+
 
 
 
@@ -99,11 +102,48 @@ renderer.setClearColor(debugObject.clearColor)
 /**
  * render text Geometry
  */
-let textGeometry = null
+
+let introGeometry = null
 const baseGeometry = {}
 const loader = new FontLoader()
  loader.load('./font/BadScript_Regular.json', (font) => {
- textGeometry = new TextGeometry("Kyle Zicherman's Portfolio",
+ introGeometry = new TextGeometry("Kyle Zicherman's Portfolio",
+        {
+        font: font,
+        size: 1,
+        depth: .1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 5
+    } );
+    const aboutMeGeometry = new TextGeometry("About Me",
+        {
+        font: font,
+        size: 1,
+        depth: .1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 5
+    } );
+    const projectGeometry = new TextGeometry("Projects",
+        {
+        font: font,
+        size: 1,
+        depth: .1,
+        curveSegments: 12,
+        bevelEnabled: true,
+        bevelThickness: 0.03,
+        bevelSize: 0.02,
+        bevelOffset: 0,
+        bevelSegments: 5
+    } );
+    const contactGeometry = new TextGeometry("Contact",
         {
         font: font,
         size: 1,
@@ -116,7 +156,38 @@ const loader = new FontLoader()
         bevelSegments: 5
     } );
 
-    baseGeometry.instance = textGeometry
+    particles.geometries = [introGeometry, aboutMeGeometry, projectGeometry, contactGeometry]
+    particles.maxCount = Math.max(...particles.geometries.map(geometry => geometry.attributes.position.count))
+    particles.positions = []
+
+    for(const geometry of particles.geometries) {
+        const originalArray = geometry.attributes.position.array
+        const newArray = new Float32Array(particles.maxCount * 3)
+
+        
+
+        for(let i = 0; i < particles.maxCount; i++) {
+
+            const i3 = i * 3
+
+            if(i3 < originalArray.length) {
+                newArray[i3 + 0] = originalArray[i3 + 0]
+                newArray[i3 + 1] = originalArray[i3 + 1]
+                newArray[i3 + 2] = originalArray[i3 + 2]
+            }
+            else {
+                newArray[i3 + 0] = 0
+                newArray[i3 + 1] = 0
+                newArray[i3 + 2] = 0
+            }
+        }
+        particles.positions.push(new THREE.BufferAttribute(newArray, 3))
+
+    }
+    console.log(particles.positions)
+
+    baseGeometry.instance = new THREE.BufferGeometry()
+    baseGeometry.instance.setAttribute('position', particles.positions[3])
 
 baseGeometry.count = baseGeometry.instance.attributes.position.count
 });
