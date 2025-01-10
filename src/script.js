@@ -187,7 +187,8 @@ const loader = new FontLoader()
     console.log(particles.positions)
 
     baseGeometry.instance = new THREE.BufferGeometry()
-    baseGeometry.instance.setAttribute('position', particles.positions[3])
+    baseGeometry.instance.setAttribute('position', particles.positions[0])
+    baseGeometry.instance.setAttribute("aPositionTarget", particles.positions[1])
 
 baseGeometry.count = baseGeometry.instance.attributes.position.count
 });
@@ -299,6 +300,7 @@ particles.geometry = new THREE.BufferGeometry()
 particles.geometry.setDrawRange(0, baseGeometry.count)
 particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(particlesArray, 2))
 particles.geometry.setAttribute('aSize', new THREE.BufferAttribute(sizesArray, 1))
+particles.geometry.setAttribute('aPositionTarget', particles.positions[3])
 
 
 
@@ -310,7 +312,8 @@ particles.material = new THREE.ShaderMaterial({
     {
         uSize: new THREE.Uniform(0.00),
         uResolution: new THREE.Uniform(new THREE.Vector2(sizes.width * sizes.pixelRatio, sizes.height * sizes.pixelRatio)),
-        uParticlesTexture: new THREE.Uniform()
+        uParticlesTexture: new THREE.Uniform(),
+        uProgress: new THREE.Uniform(0)
     }
 })
 
@@ -323,6 +326,7 @@ scene.add(particles.points)
  */
 gui.addColor(debugObject, 'clearColor').onChange(() => { renderer.setClearColor(debugObject.clearColor) })
 gui.add(particles.material.uniforms.uSize, 'value').min(0).max(1).step(0.001).name('uSize')
+gui.add(particles.material.uniforms.uProgress, 'value').min(0).max(1).step(0.001).name('uProgress')
 const cameraFolder = gui.addFolder('Camera Position')
 cameraFolder.add(camera.position, 'x').min(-50).max(50).step(0.1).name('X')
 cameraFolder.add(camera.position, 'y').min(-50).max(50).step(0.1).name('Y')
