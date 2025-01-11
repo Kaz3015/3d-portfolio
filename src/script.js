@@ -23,12 +23,6 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
-// Loaders
-const dracoLoader = new DRACOLoader()
-dracoLoader.setDecoderPath('/draco/')
-
-const gltfLoader = new GLTFLoader()
-gltfLoader.setDRACOLoader(dracoLoader)
 
 /**
  * Sizes
@@ -143,7 +137,7 @@ const loader = new FontLoader()
         bevelOffset: 0,
         bevelSegments: 5
     } );
-    const contactGeometry = new TextGeometry("Contact",
+    const contactGeometry = new TextGeometry("Contact Infromation",
         {
         font: font,
         size: 1,
@@ -176,9 +170,10 @@ const loader = new FontLoader()
                 newArray[i3 + 2] = originalArray[i3 + 2]
             }
             else {
-                newArray[i3 + 0] = 0
-                newArray[i3 + 1] = 0
-                newArray[i3 + 2] = 0
+                const randomIndex = Math.floor(Math.random() * geometry.attributes.position.count) * 3
+                newArray[i3 + 0] = originalArray[randomIndex]
+                newArray[i3 + 1] = originalArray[randomIndex + 1]
+                newArray[i3 + 2] = originalArray[randomIndex + 2]
             }
         }
         particles.positions.push(new THREE.BufferAttribute(newArray, 3))
